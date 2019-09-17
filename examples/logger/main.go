@@ -50,7 +50,7 @@ func main() {
 		if err := sensor.SetWorkMode(sds011.WorkModeActive); err != nil {
 			logrus.StandardLogger().Errorf("Error setting active mode on %s: %s", devicePath, err)
 		}
-		time.Sleep(15 * time.Second)
+		time.Sleep(30 * time.Second)
 
 		// Read single data point
 		dataPoint, err := sensor.QueryData()
