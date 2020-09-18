@@ -1,4 +1,10 @@
 # Simple go package to control / read data from Nova Fitness SDS011 fine dust sensor
+
+[![Github Release](https://img.shields.io/github/release/fako1024/sds011.svg)](https://github.com/fako1024/sds011/releases)
+[![GoDoc](https://godoc.org/github.com/fako1024/sds011?status.svg)](https://godoc.org/github.com/fako1024/sds011/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fako1024/sds011)](https://goreportcard.com/report/github.com/fako1024/sds011)
+[![Build/Test Status](https://github.com/fako1024/sds011/workflows/Go/badge.svg)](https://github.com/fako1024/sds011/actions?query=workflow%3AGo)
+
 This package allows to extract structured data from an SDS011 fine dust / particle density sensor device (see [here](http://www.inovafitness.com/en/a/chanpinzhongxin/95.html) for details / specs). Usage is fairly trivial (see examples directory for a simple console logger implementation).
 
 ## Features
