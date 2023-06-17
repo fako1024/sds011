@@ -28,6 +28,8 @@ const (
 	CommandSetWorkModePrefix      = "aab40601"
 	CommandSetReportingModePrefix = "aab40201"
 	CommandSetWorkPeriodPrefix    = "aab40801"
+
+	expectedDataLen = 10
 )
 
 const (
@@ -119,7 +121,7 @@ func (s *SDS011) SetWorkMode(mode WorkMode) error {
 	}
 
 	if confirmedMode := WorkMode(hex.EncodeToString([]byte{rxData[4]})); confirmedMode != mode {
-		return fmt.Errorf("Unexpected work mode confirmation, want %s, have %s", mode, confirmedMode)
+		return fmt.Errorf("unexpected work mode confirmation, want %s, have %s", mode, confirmedMode)
 	}
 
 	return nil
@@ -143,7 +145,7 @@ func (s *SDS011) SetReportingMode(mode ReportingMode) error {
 	}
 
 	if confirmedMode := ReportingMode(hex.EncodeToString([]byte{rxData[4]})); confirmedMode != mode {
-		return fmt.Errorf("Unexpected reporting mode confirmation, want %s, have %s", mode, confirmedMode)
+		return fmt.Errorf("unexpected reporting mode confirmation, want %s, have %s", mode, confirmedMode)
 	}
 
 	return nil
@@ -166,7 +168,7 @@ func (s *SDS011) GetWorkPeriod() (int, error) {
 func (s *SDS011) SetWorkPeriod(delayMinutes int) error {
 
 	if delayMinutes < WorkPeriodContinuous || delayMinutes > WorkPeriodMax {
-		return fmt.Errorf("Requested working period out of limits, must be between 0 and 30 (minutes)")
+		return fmt.Errorf("requested working period out of limits, must be between 0 and 30 (minutes)")
 	}
 
 	rxData, err := s.executeCommand(CommandSetWorkPeriodPrefix + fmt.Sprintf("%02x", delayMinutes) + "00000000000000000000ffff")
@@ -175,7 +177,7 @@ func (s *SDS011) SetWorkPeriod(delayMinutes int) error {
 	}
 
 	if confirmedDelay := int(rxData[4]); confirmedDelay != delayMinutes {
-		return fmt.Errorf("Unexpected working period confirmation, want %d, have %d", delayMinutes, confirmedDelay)
+		return fmt.Errorf("unexpected working period confirmation, want %d, have %d", delayMinutes, confirmedDelay)
 	}
 
 	return nil
@@ -283,7 +285,7 @@ func (s *SDS011) readRawData() ([]byte, error) {
 	case res := <-dataChannel:
 		return res.data, res.err
 	case <-time.After(serialTimeout):
-		return nil, fmt.Errorf("Timeout while reading from serial port (device in sleep mode?)")
+		return nil, fmt.Errorf("timeout while reading from serial port (device in sleep mode?)")
 	}
 }
 
@@ -296,7 +298,7 @@ func (s *SDS011) writeRawData(data []byte) error {
 	}
 
 	if n != len(data) {
-		return fmt.Errorf("Unexpected number of bytes written")
+		return fmt.Errorf("unexpected number of bytes written, want %d, have %d", len(data), n)
 	}
 	// Return the raw data received
 	return nil
@@ -305,12 +307,12 @@ func (s *SDS011) writeRawData(data []byte) error {
 ////////////////////////////////////////////////////////////////////////////////
 
 func validateRxData(data []byte) error {
-	if len(data) != 10 {
-		return fmt.Errorf("Unexpected data length, want 10, have %d", len(data))
+	if len(data) != expectedDataLen {
+		return fmt.Errorf("unexpected data length, want %d, have %d", expectedDataLen, len(data))
 	}
 
-	if calcChecksum(data[2:8]) != data[8] {
-		return fmt.Errorf("Checksum mismatch")
+	if sum := calcChecksum(data[2:8]); sum != data[8] {
+		return fmt.Errorf("checksum mismatch, want %x, have %x", data[8], sum)
 	}
 
 	return nil
@@ -338,18 +340,18 @@ func createCommand(hexCMD string) ([]byte, error) {
 func decodeSensorValues(rawData []byte) (float64, float64, error) {
 
 	if len(rawData) != 4 {
-		return 0., 0., fmt.Errorf("Unexpected length of raw data, need exactly 4 bytes, have %d", len(rawData))
+		return 0., 0., fmt.Errorf("unexpected length of raw data, need exactly 4 bytes, have %d", len(rawData))
 	}
 
 	// Convert data to count (little endian)
 	var count25, count10 int16
 	buf := bytes.NewBuffer(rawData[:2])
 	if err := binary.Read(buf, binary.LittleEndian, &count25); err != nil {
-		return 0., 0., fmt.Errorf("Error parsing PM2.5 value: %s", err)
+		return 0., 0., fmt.Errorf("error parsing PM2.5 value: %w", err)
 	}
 	buf = bytes.NewBuffer(rawData[2:])
 	if err := binary.Read(buf, binary.LittleEndian, &count10); err != nil {
-		return 0., 0., fmt.Errorf("Error parsing PM10 value: %s", err)
+		return 0., 0., fmt.Errorf("error parsing PM10 value: %w", err)
 	}
 
 	return 0.1 * float64(count25), 0.1 * float64(count10), nil
